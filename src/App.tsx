@@ -20,44 +20,42 @@ import {
   ChevronSort,
   ArrowUp,
   ArrowDown,
-  Filter,
   Download,
   OpenPanelRight,
 } from "@carbon/react/icons";
-import { ReactNode, useState } from "react";
+import { Fragment, ReactNode, useState } from "react";
 import {
-  useSortBy,
-  useExpanded,
-  useRowSelect,
-  useTable,
-  useGlobalFilter,
-} from "react-table";
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  SortingState,
+  getSortedRowModel,
+  getFilteredRowModel,
+} from "@tanstack/react-table";
 import styles from "./App.module.scss";
 import { useGridData } from "./gridData";
 
+
 export default function App() {
-  const { columns, data } = useGridData();
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-    selectedFlatRows,
-    isAllRowsSelected,
-    toggleRowSelected,
-    toggleAllRowsSelected,
-    toggleRowExpanded,
-    setGlobalFilter,
-    state: { selectedRowIds, expanded },
-  } = useTable(
-    { columns, data },
-    useGlobalFilter,
-    useSortBy,
-    useExpanded,
-    useRowSelect
-  );
   const [sidePanel, setSidePanel] = useState<ReactNode | undefined>();
+  const { columns, data } = useGridData();
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const table = useReactTable({
+    columns,
+    data,
+    getCoreRowModel: getCoreRowModel(),
+    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      sorting,
+      globalFilter,
+    },
+  });
+
+  const headerGroups = table.getHeaderGroups();
 
   return (
     <div className={styles.container}>
@@ -80,23 +78,24 @@ export default function App() {
         </div>
 
         <div>
-          <Table {...getTableProps()} useZebraStyles>
+          <Table useZebraStyles>
             <TableHead>
               {headerGroups.map((headerGroup, headerGroupIndex) => (
                 <TableRow
+                  key={headerGroup.id}
                   className={styles.tableHeaderRow}
-                  {...headerGroup.getHeaderGroupProps()}
                 >
                   {/* The select all checkbox must only ever appear in the bottom row. Other rows just use an empty cell. */}
                   {headerGroupIndex === headerGroups.length - 1 ? (
                     <TableSelectAll
-                      checked={isAllRowsSelected}
+                      checked={table.getIsAllRowsSelected()}
                       indeterminate={
-                        !isAllRowsSelected && selectedFlatRows.length > 0
+                        !table.getIsAllRowsSelected() &&
+                        table.getIsSomeRowsSelected()
                       }
                       id="table-select-all"
                       name="table-select-all"
-                      onSelect={() => toggleAllRowsSelected(!isAllRowsSelected)}
+                      onSelect={() => table.toggleAllRowsSelected()}
                     />
                   ) : (
                     <TableHeader />
@@ -105,109 +104,97 @@ export default function App() {
                   {/* Expand header. */}
                   <TableHeader />
 
-                  {headerGroup.headers.map((column) =>
-                    headerGroupIndex === headerGroups.length - 1 ? (
-                      // Last row header. Only those can have actions.
-                      <TableHeader {...column.getHeaderProps()}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHeader key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder ? null : (
                         <div className={styles.headerWithActions}>
-                          {column.render("Header")}
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
 
-                          <Button
-                            hasIconOnly
-                            renderIcon={
-                              column.isSorted
-                                ? column.isSortedDesc
-                                  ? ArrowDown
-                                  : ArrowUp
-                                : ChevronSort
-                            }
-                            size="sm"
-                            kind="ghost"
-                            iconDescription="Sort"
-                            onClick={() => column.toggleSortBy()}
-                          />
-
-                          {/* <Button
-                            hasIconOnly
-                            renderIcon={Filter}
-                            size="sm"
-                            kind="ghost"
-                            iconDescription="Filter..."
-                          /> */}
+                          {headerGroupIndex === headerGroups.length - 1 && (
+                            <Button
+                              hasIconOnly
+                              renderIcon={
+                                header.column.getIsSorted() !== false
+                                  ? header.column.getIsSorted() === "desc"
+                                    ? ArrowDown
+                                    : ArrowUp
+                                  : ChevronSort
+                              }
+                              size="sm"
+                              kind="ghost"
+                              iconDescription="Sort"
+                              onClick={header.column.getToggleSortingHandler()}
+                            />
+                          )}
                         </div>
-                      </TableHeader>
-                    ) : (
-                      // Grouping header.
-                      <TableHeader {...column.getHeaderProps()}>
-                        {column.render("Header")}
-                      </TableHeader>
-                    )
-                  )}
+                      )}
+                    </TableHeader>
+                  ))}
                 </TableRow>
               ))}
             </TableHead>
 
-            <TableBody {...getTableBodyProps()}>
-              {rows.map((row) => {
-                prepareRow(row);
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <Fragment key={row.id}>
+                  <TableRow>
+                    <TableSelectRow
+                      aria-label="Select"
+                      checked={row.getIsSelected()}
+                      id={`row-select-${row.id}`}
+                      name={`row-select-${row.id}`}
+                      onSelect={() => row.toggleSelected()}
+                    />
 
-                return (
-                  <>
-                    <TableRow {...row.getRowProps()}>
-                      <TableSelectRow
-                        aria-label="Select"
-                        checked={selectedRowIds[row.id]}
-                        id={`row-select-${row.id}`}
-                        name={`row-select-${row.id}`}
-                        onSelect={() => toggleRowSelected(row.id)}
-                      />
+                    <TableCell>
+                      <div className={styles.expandCell}>
+                        Show all forms{" "}
+                        <Button
+                          hasIconOnly
+                          renderIcon={
+                            row.getIsExpanded() ? ChevronUp : ChevronDown
+                          }
+                          size="sm"
+                          kind="ghost"
+                          iconDescription="Show all forms"
+                          onClick={() => row.toggleExpanded()}
+                        />
+                      </div>
+                    </TableCell>
 
-                      <TableCell>
-                        <div className={styles.expandCell}>
-                          Show all forms{" "}
-                          <Button
-                            hasIconOnly
-                            renderIcon={
-                              expanded[row.id] ? ChevronUp : ChevronDown
-                            }
-                            size="sm"
-                            kind="ghost"
-                            iconDescription="Show all forms"
-                            onClick={() => toggleRowExpanded([row.id])}
-                          />
-                        </div>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        onClick={() => {
+                          setSidePanel(
+                            <EditPanel
+                              info={`Cell value: ${cell.getValue()}\nRow: ${JSON.stringify(
+                                row.original,
+                                null,
+                                2
+                              )}`}
+                              close={() => setSidePanel(undefined)}
+                            />
+                          );
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
-
-                      {row.cells.map((cell) => (
-                        <TableCell
-                          {...cell.getCellProps()}
-                          onClick={() => {
-                            setSidePanel(
-                              <EditPanel
-                                info={`Cell value: ${
-                                  cell.value
-                                }\nRow: ${JSON.stringify(
-                                  row.original,
-                                  null,
-                                  2
-                                )}`}
-                                close={() => setSidePanel(undefined)}
-                              />
-                            );
-                          }}
-                        >
-                          {cell.render("Cell")}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {expanded[row.id] && (
-                      <TableExpandedRow colSpan={rows.length + 1}>
-                        <h1>Inner Form Grid Goes here</h1>
-                      </TableExpandedRow>
-                    )}
-                  </>
-                );
-              })}
+                    ))}
+                  </TableRow>
+                  {row.getIsExpanded() && (
+                    <TableExpandedRow colSpan="100%">
+                      <h1>Inner Form Grid Goes here</h1>
+                    </TableExpandedRow>
+                  )}
+                </Fragment>
+              ))}
             </TableBody>
           </Table>
         </div>

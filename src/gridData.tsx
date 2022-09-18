@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import { Column } from "react-table";
 import { faker } from "@faker-js/faker";
+import { ColumnDef } from "@tanstack/react-table";
 
-function getAccessors(columns: Array<Column>, result = new Set<string>()) {
+function getAccessors(columns: Array<any>, result = new Set<string>()) {
   for (const column of columns) {
-    if (column.accessor) result.add(column.accessor as string);
+    if (column.accessorKey) result.add(column.accessorKey);
     getAccessors((column as any).columns ?? [], result);
   }
   return [...result];
@@ -22,62 +22,50 @@ const accessorFakers = {
 } as const;
 
 export function useGridData(count = 100) {
-  const columns = useMemo<Array<Column>>(
+  const columns = useMemo<Array<ColumnDef<any>>>(
     () => [
       {
-        Header: "Healthcare user",
+        header: "Healthcare user",
         columns: [
           {
-            id: "col-placeholder-1",
-            Header: "",
-            columns: [
-              {
-                Header: "Patient name",
-                accessor: "name",
-              },
-              {
-                Header: "Country",
-                accessor: "country",
-              },
-              {
-                Header: "Structure",
-                accessor: "structure",
-              },
-              {
-                Header: "Gender",
-                accessor: "gender",
-              },
-              {
-                Header: "Age category",
-                accessor: "age",
-              },
-            ],
+            header: "Patient name",
+            accessorKey: "name",
+          },
+          {
+            header: "Country",
+            accessorKey: "country",
+          },
+          {
+            header: "Structure",
+            accessorKey: "structure",
+          },
+          {
+            header: "Gender",
+            accessorKey: "gender",
+          },
+          {
+            header: "Age category",
+            accessorKey: "age",
           },
         ],
       },
       {
-        Header: "Latest admission form",
+        header: "Latest admission form",
         columns: [
           {
-            id: "col-placeholder-2",
-            Header: "",
-            columns: [
-              {
-                Header: "Date",
-                accessor: "date",
-              },
-            ],
+            header: "Date",
+            accessorKey: "date",
           },
           {
-            Header: "Consultation details",
+            header: "Consultation details",
             columns: [
               {
-                Header: "Practicioner affiliation",
-                accessor: "practicionerAffiliation",
+                header: "Practicioner affiliation",
+                accessorKey: "practicionerAffiliation",
               },
               {
-                Header: "Place of consultation",
-                accessor: "placeOfConsultation",
+                header: "Place of consultation",
+                accessorKey: "placeOfConsultation",
               },
             ],
           },
