@@ -127,13 +127,13 @@ export default function App() {
                             onClick={() => column.toggleSortBy()}
                           />
 
-                          <Button
+                          {/* <Button
                             hasIconOnly
                             renderIcon={Filter}
                             size="sm"
                             kind="ghost"
                             iconDescription="Filter..."
-                          />
+                          /> */}
                         </div>
                       </TableHeader>
                     ) : (
