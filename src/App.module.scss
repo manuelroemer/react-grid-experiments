@@ -1,0 +1,39 @@
+.tableHeaderRow {
+    border: 1px solid lightgray !important; // :^)
+    white-space: nowrap;
+}
+
+.expandCell {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+
+.headerWithActions {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+
+.tableHeaderContainer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tableSearchLayer {
+    width: 20%;
+    min-width: 12.5rem;
+}
+
+.container {
+    display: flex;
+
+    .tableContainer {
+        overflow: auto;
+        flex: 1;
+    }
+}
+
+.sidePanel {
+    flex-basis: 30vw;
+}
